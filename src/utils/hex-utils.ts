@@ -1,7 +1,6 @@
 /* External Imports */
-import { BigNumber } from 'ethers';
 
-export const toHexString32 = (value: string | number | BigNumber | boolean): string => {
+export const toHexString32 = (value: string | number | bigint | boolean): string => {
   if (typeof value === 'string' && value.startsWith('0x')) {
     // Known bug here is that bytes20 and address are indistinguishable but have to be treated
     // differently. Address gets padded on the right, bytes20 gets padded on the left. Address is
@@ -15,7 +14,7 @@ export const toHexString32 = (value: string | number | BigNumber | boolean): str
   } else if (typeof value === 'boolean') {
     return '0x' + `${value ? 1 : 0}`.padStart(64, '0');
   } else {
-    return '0x' + remove0x(BigNumber.from(value).toHexString()).padStart(64, '0').toLowerCase();
+    return '0x' + remove0x(BigInt(value).toString(16)).padStart(64, '0').toLowerCase();
   }
 };
 
@@ -39,7 +38,7 @@ export const fromHexString = (inp: Buffer | string): Buffer => {
  */
 export const toHexString = (inp: Buffer | string | number): string => {
   if (typeof inp === 'number') {
-    return BigNumber.from(inp).toHexString();
+    return BigInt(inp).toString(16);
   } else {
     return '0x' + fromHexString(inp).toString('hex');
   }
@@ -63,8 +62,8 @@ export const remove0x = (str: string): string => {
  * @param bn big number to parse
  * @returns hex representation of the big number
  */
-export function bigNumberToHex(bn: BigNumber) {
-  let bi = BigInt(bn.toBigInt());
+export function bigNumberToHex(bn: bigint) {
+  let bi = bn;
 
   var pos = true;
   if (bi < 0) {

@@ -1,13 +1,14 @@
 import { Address } from '@nomicfoundation/ethereumjs-util';
-import { FactoryOptions } from '@nomiclabs/hardhat-ethers/types';
 import { BaseContract, ContractFactory, ethers } from 'ethers';
 import hre from 'hardhat';
+import { splitSignature } from '@ethersproject/bytes';
 import { ethersInterfaceFromSpec } from './factories/ethers-interface';
 import { createFakeContract, createMockContractFactory } from './factories/smock-contract';
 import { ProgrammableFunctionLogic } from './logic/programmable-function-logic';
 import { ObservableVM } from './observable-vm';
 import { CallOverrideCallback, EDRProvider, FakeContract, FakeContractOptions, FakeContractSpec, MockContractFactory } from './types';
 import { getHardhatBaseProvider, makeRandomAddress } from './utils';
+import { FactoryOptions } from '@nomicfoundation/hardhat-ethers/types';
 
 // Handle hardhat ^2.4.0
 let decodeRevertReason: (value: Buffer) => string;
@@ -51,6 +52,10 @@ export class Sandbox {
 
     const [result, shouldRevert] = encodedCallAnswer;
 
+    if (shouldRevert) {
+      return undefined;
+    }
+
     return {
       result,
       shouldRevert,
@@ -90,19 +95,19 @@ export class Sandbox {
       opts.address || makeRandomAddress(),
       await ethersInterfaceFromSpec(spec),
       opts.provider || hre.ethers.provider,
-      (address, sighash, functionLogic) => this.addFunctionToMap(address, sighash, functionLogic)
+      (address, sighash, functionLogic) => this.addFunctionToMap(address, sighash, functionLogic),
     );
   }
 
   async mock<T extends ContractFactory>(
     contractName: string,
-    signerOrOptions?: ethers.Signer | FactoryOptions
+    signerOrOptions?: ethers.Signer | FactoryOptions,
   ): Promise<MockContractFactory<T>> {
     return createMockContractFactory(
       this.vm,
       contractName,
       (address, sighash, functionLogic) => this.addFunctionToMap(address, sighash, functionLogic),
-      signerOrOptions
+      signerOrOptions,
     );
   }
 
@@ -110,7 +115,7 @@ export class Sandbox {
     // Only support native hardhat runtime, haven't bothered to figure it out for anything else.
     if (hre.network.name !== 'hardhat') {
       throw new Error(
-        `Smock is only compatible with the "hardhat" network, got: ${hre.network.name}. Follow this issue for more info: https://github.com/defi-wonderland/smock/issues/29`
+        `Smock is only compatible with the "hardhat" network, got: ${hre.network.name}. Follow this issue for more info: https://github.com/defi-wonderland/smock/issues/29`,
       );
     }
 

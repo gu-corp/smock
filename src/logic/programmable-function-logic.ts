@@ -1,6 +1,5 @@
 import { Address } from '@nomicfoundation/ethereumjs-util';
 import { ethers } from 'ethers';
-import { Interface } from 'ethers/lib/utils';
 import { findLast } from 'lodash';
 import { Observable } from 'rxjs';
 import { getMessageArgs } from '../factories/smock-contract';
@@ -27,11 +26,11 @@ export class ProgrammableFunctionLogic extends WatchableFunctionLogic {
   protected answerByArgs: { answer: ProgrammedAnswer; args: unknown[] }[] = [];
 
   constructor(
-    private contractInterface: Interface,
+    private contractInterface: ethers.Interface,
     private sighash: string | null,
     name: string,
     calls$: Observable<ContractCall>,
-    encoder: (values?: ProgrammedReturnValue) => string
+    encoder: (values?: ProgrammedReturnValue) => string,
   ) {
     super(name, calls$);
 
@@ -136,7 +135,7 @@ export class ProgrammableFunctionLogic extends WatchableFunctionLogic {
   private encodeRevertReason(reason: string): Buffer {
     if (reason === undefined) return EMPTY_ANSWER;
 
-    const errorInterface = new ethers.utils.Interface([
+    const errorInterface = new ethers.Interface([
       {
         inputs: [
           {

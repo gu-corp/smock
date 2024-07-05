@@ -1,4 +1,4 @@
-import { BigNumber, ethers } from 'ethers';
+import { ethers } from 'ethers';
 import { artifacts } from 'hardhat';
 import semver from 'semver';
 import { SmockVMManager } from '../types';
@@ -82,7 +82,7 @@ export async function getStorageLayout(name: string): Promise<SolidityStorageLay
 
   if (!('storageLayout' in output)) {
     throw new Error(
-      `Storage layout for ${name} not found. Did you forget to set the storage layout compiler option in your hardhat config? Read more: https://smock.readthedocs.io/en/latest/getting-started.html#enabling-mocks`
+      `Storage layout for ${name} not found. Did you forget to set the storage layout compiler option in your hardhat config? Read more: https://smock.readthedocs.io/en/latest/getting-started.html#enabling-mocks`,
     );
   }
 
@@ -182,12 +182,12 @@ export function computeStorageSlots(storageLayout: SolidityStorageLayout, variab
  * @return Padded hex string.
  */
 function padNumHexSlotValue(val: any, offset: number): string {
-  const bn = BigNumber.from(val);
+  const bn = BigInt(val);
 
   return (
     '0x' +
     bigNumberToHex(bn)
-      .padStart(64 - offset * 2, bn.isNegative() ? 'f' : '0') // Pad the start with 64 - offset bytes
+      .padStart(64 - offset * 2, bn < 0 ? 'f' : '0') // Pad the start with 64 - offset bytes
       .padEnd(64, '0') // Pad the end (up to 64 bytes) with zero bytes.
       .toLowerCase() // Making this lower case makes assertions more consistent later.
   );
@@ -232,20 +232,15 @@ function encodeVariable(
     [name: string]: SolidityStorageType;
   },
   nestedSlotOffset = 0,
-  baseSlotKey?: string
+  baseSlotKey?: string,
 ): StorageSlotPair[] {
   let slotKey: string =
-    '0x' +
-    remove0x(
-      BigNumber.from(baseSlotKey || nestedSlotOffset)
-        .add(BigNumber.from(parseInt(storageObj.slot, 10)))
-        .toHexString()
-    ).padStart(64, '0');
+    '0x' + remove0x((BigInt(baseSlotKey || nestedSlotOffset) + BigInt(parseInt(storageObj.slot, 10))).toString(16)).padStart(64, '0');
 
   const variableType = storageTypes[storageObj.type];
   if (variableType.encoding === 'inplace') {
     if (variableType.label === 'address' || variableType.label.startsWith('contract')) {
-      if (!ethers.utils.isAddress(variable)) {
+      if (!ethers.isAddress(variable)) {
         throw new Error(`invalid address type: ${variable}`);
       }
 
@@ -277,7 +272,7 @@ function encodeVariable(
         },
       ];
     } else if (variableType.label.startsWith('bytes')) {
-      if (!ethers.utils.isHexString(variable, parseInt(variableType.numberOfBytes, 10))) {
+      if (!ethers.isHexString(variable, parseInt(variableType.numberOfBytes, 10))) {
         throw new Error(`invalid bytesN type`);
       }
 
@@ -288,9 +283,9 @@ function encodeVariable(
         },
       ];
     } else if (variableType.label.startsWith('uint') || variableType.label.startsWith('int')) {
-      let valueLength = remove0x(BigNumber.from(variable).toHexString()).length;
+      let valueLength = remove0x(BigInt(variable).toString(16)).length;
       if (variableType.label.startsWith('int')) {
-        valueLength = remove0x(BigNumber.from(variable).toHexString().slice(1)).length;
+        valueLength = remove0x(BigInt(variable).toString(16).slice(1)).length;
       }
 
       if (valueLength / 2 > parseInt(variableType.numberOfBytes, 10)) {
@@ -315,8 +310,8 @@ function encodeVariable(
             }) as SolidityStorageObj,
             storageTypes,
             nestedSlotOffset + parseInt(storageObj.slot as any, 10),
-            baseSlotKey
-          )
+            baseSlotKey,
+          ),
         );
       }
       return slots;
@@ -328,7 +323,7 @@ function encodeVariable(
     }
 
     // `string` types are converted to utf8 bytes, `bytes` are left as-is (assuming 0x prefixed).
-    const bytes = storageObj.type === 'string' ? ethers.utils.toUtf8Bytes(variable) : fromHexString(variable);
+    const bytes = storageObj.type === 'string' ? ethers.toUtf8Bytes(variable) : fromHexString(variable);
 
     // ref: https://docs.soliditylang.org/en/v0.8.4/internals/layout_in_storage.html#bytes-and-string
     if (bytes.length < 32) {
@@ -338,12 +333,7 @@ function encodeVariable(
       return [
         {
           key: slotKey,
-          val: ethers.utils.hexlify(
-            ethers.utils.concat([
-              ethers.utils.concat([bytes, ethers.constants.HashZero]).slice(0, 31),
-              ethers.BigNumber.from(bytes.length * 2).toHexString(),
-            ])
-          ),
+          val: ethers.hexlify(ethers.concat([ethers.concat([bytes, ethers.ZeroHash]).slice(0, 31), BigInt(bytes.length * 2).toString(16)])),
         },
       ];
     } else {
@@ -359,12 +349,10 @@ function encodeVariable(
       // Each storage slot has 32 bytes so we make sure to slice the large bytes into 32bytes chunks
       for (let i = 0; i * 32 < bytes.length; i++) {
         // We calculate the Storage Slot key based on the solidity docs (see above link)
-        let key = BigNumber.from(ethers.utils.keccak256(slotKey))
-          .add(BigNumber.from(i.toString(16)))
-          .toHexString();
+        let key = '0x' + (BigInt(ethers.keccak256(slotKey)) + BigInt(i)).toString(16);
         slots = slots.concat({
           key: key,
-          val: ethers.utils.hexlify(ethers.utils.concat([bytes.slice(i * 32, i * 32 + 32), ethers.constants.HashZero]).slice(0, 32)),
+          val: ethers.hexlify(ethers.concat([bytes.slice(i * 32, i * 32 + 32), ethers.ZeroHash]).slice(0, 32)),
         });
       }
 
@@ -381,7 +369,7 @@ function encodeVariable(
       // Mapping keys are encoded depending on the key type.
       let key: string;
       if (variableType.key.startsWith('t_uint')) {
-        key = padNumHexSlotValue(BigNumber.from(varName).toHexString(), 0);
+        key = padNumHexSlotValue('0x' + BigInt(varName).toString(16), 0);
       } else if (variableType.key.startsWith('t_bytes')) {
         key = padBytesHexSlotValue('0x' + remove0x(varName).padEnd(64, '0'), 0);
       } else {
@@ -393,7 +381,7 @@ function encodeVariable(
       // If baseSlotKey is defined here, then we're inside of a nested mapping and we should work
       // off of that previous baseSlotKey. Otherwise the base slot will be the slot of this map.
       const prevBaseSlotKey = baseSlotKey || padNumHexSlotValue(storageObj.slot, 0);
-      const nextBaseSlotKey = ethers.utils.keccak256(key + remove0x(prevBaseSlotKey));
+      const nextBaseSlotKey = ethers.keccak256(key + remove0x(prevBaseSlotKey));
 
       // Encode the value. We need to use a dummy storageObj here because the function expects it.
       // Of course, we're not mapping to a specific variable. We map to a variable /type/. So we
@@ -411,8 +399,8 @@ function encodeVariable(
           },
           storageTypes,
           nestedSlotOffset + parseInt(storageObj.slot, 10),
-          nextBaseSlotKey
-        )
+          nextBaseSlotKey,
+        ),
       );
     }
     return slots;
@@ -430,7 +418,7 @@ function encodeVariable(
     ];
 
     let numberOfBytes: number = 0;
-    let nextBaseSlotKey = BigNumber.from(ethers.utils.keccak256(slotKey));
+    let nextBaseSlotKey = BigInt(ethers.keccak256(slotKey));
 
     // We need to find the number of bytes the base type has.
     // The `numberOfBytes` variable will help us deal with packed arrays.
@@ -451,11 +439,11 @@ function encodeVariable(
         offset += numberOfBytes;
         if (offset >= 32) {
           offset = 0;
-          nextBaseSlotKey = nextBaseSlotKey.add(BigNumber.from(1));
+          nextBaseSlotKey = nextBaseSlotKey + BigInt(1);
         }
       } else {
         offset = 0;
-        nextBaseSlotKey = BigNumber.from(ethers.utils.keccak256(slotKey)).add(BigNumber.from(i.toString(16)));
+        nextBaseSlotKey = BigInt(ethers.keccak256(slotKey)) + BigInt(i.toString(16));
       }
 
       slots = slots.concat(
@@ -471,8 +459,8 @@ function encodeVariable(
           },
           storageTypes,
           nestedSlotOffset,
-          nextBaseSlotKey.toHexString()
-        )
+          nextBaseSlotKey.toString(16),
+        ),
       );
     }
     return slots;
@@ -502,7 +490,7 @@ export async function getVariableStorageSlots(
   contractAddress: string,
   mappingKey?: any[] | number | string,
   baseSlotKey?: string,
-  storageType?: SolidityStorageType
+  storageType?: SolidityStorageType,
 ): Promise<StorageSlotKeyTypePair[]> {
   // Find the entry in the storage layout that corresponds to this variable name.
   const storageObj = storageLayout.storage.find((entry) => {
@@ -518,14 +506,7 @@ export async function getVariableStorageSlots(
 
   // Here we will store all the key/type pairs that we need to get the variable's value
   let slotKeysTypes: StorageSlotKeyTypePair[] = [];
-  let key: string =
-    baseSlotKey ||
-    '0x' +
-      remove0x(
-        BigNumber.from(0)
-          .add(BigNumber.from(parseInt(storageObj.slot, 10)))
-          .toHexString()
-      ).padStart(64, '0');
+  let key: string = baseSlotKey || '0x' + remove0x((BigInt(0) + BigInt(parseInt(storageObj.slot, 10))).toString(16)).padStart(64, '0');
 
   if (storageObjectType.encoding === 'inplace') {
     // For `inplace` encoding we only need to be aware of structs where they take more slots to store a variable
@@ -554,7 +535,7 @@ export async function getVariableStorageSlots(
       contractAddress,
       key,
       storageObjectType,
-      mappingKey
+      mappingKey,
     );
   } else if (storageObjectType.encoding === 'dynamic_array') {
     slotKeysTypes = await getDynamicArrayTypeStorageSlots(vmManager, contractAddress, storageObjectType, key);
@@ -567,7 +548,7 @@ function getStructTypeStorageSlots(
   storageLayout: SolidityStorageLayout,
   key: string,
   storageObjectType: SolidityStorageType,
-  storageObj: SolidityStorageObj
+  storageObj: SolidityStorageObj,
 ): StorageSlotKeyTypePair[] {
   if (storageObjectType.members === undefined) {
     throw new Error(`There are no members in object type ${storageObjectType}`);
@@ -585,11 +566,11 @@ function getStructTypeStorageSlots(
   // These slots are for the members of the struct
   slotKeysTypes = slotKeysTypes.concat(
     storageObjectType.members.map((member) => ({
-      key: '0x' + remove0x(BigNumber.from(key).add(BigNumber.from(member.slot)).toHexString()).padStart(64, '0'),
+      key: '0x' + remove0x((BigInt(key) + BigInt(member.slot)).toString(16)).padStart(64, '0'),
       type: storageLayout.types[member.type],
       label: member.label,
       offset: member.offset,
-    }))
+    })),
   );
 
   return slotKeysTypes;
@@ -600,7 +581,7 @@ async function getBytesTypeStorageSlots(
   contractAddress: string,
   storageObjectType: SolidityStorageType,
   storageObj: SolidityStorageObj,
-  key: string
+  key: string,
 ): Promise<StorageSlotKeyTypePair[]> {
   let slotKeysTypes: StorageSlotKeyTypePair[] = [];
   // The last 2 bytes of the slot represent the length of the string/bytes variable
@@ -615,7 +596,7 @@ async function getBytesTypeStorageSlots(
     // we are storing their slotkeys, type and the length which will help us in `decodeVariable`
     for (let i = 0; i < numberOfSlots; i++) {
       slotKeysTypes = slotKeysTypes.concat({
-        key: ethers.utils.keccak256(key) + i,
+        key: ethers.keccak256(key) + i,
         type: storageObjectType,
         length: i + 1 <= numberOfSlots ? 32 : (parseInt(bytesValue, 16) - 1) % 32,
         label: storageObj.label,
@@ -644,7 +625,7 @@ async function getMappingTypeStorageSlots(
   key: string,
   storageObjectType: SolidityStorageType,
   mappingKey: any[] | number | string,
-  baseSlotKey?: string
+  baseSlotKey?: string,
 ): Promise<StorageSlotKeyTypePair[]> {
   if (storageObjectType.key === undefined || storageObjectType.value === undefined) {
     // Should never happen in practice but required to maintain proper typing.
@@ -656,7 +637,7 @@ async function getMappingTypeStorageSlots(
   // In this part we calculate the `h(k)` where k is the mapping key the user provided and h is a function that is applied to the key depending on its type
   let mappKey: string;
   if (storageObjectType.key.startsWith('t_uint')) {
-    mappKey = padNumHexSlotValue(BigNumber.from(mappingKey[0]).toHexString(), 0);
+    mappKey = padNumHexSlotValue(BigInt(mappingKey[0]).toString(16), 0);
   } else if (storageObjectType.key.startsWith('t_bytes')) {
     mappKey = padBytesHexSlotValue('0x' + remove0x(mappingKey[0] as string).padEnd(64, '0'), 0);
   } else {
@@ -669,7 +650,7 @@ async function getMappingTypeStorageSlots(
   // off of that previous baseSlotKey. Otherwise the base slot will be the key we already have.
   const prevBaseSlotKey = baseSlotKey || key;
   // Since we have `h(k) = mappKey` and `p = key` now we can calculate the slot key
-  let nextSlotKey = ethers.utils.keccak256(mappKey + remove0x(prevBaseSlotKey));
+  let nextSlotKey = ethers.keccak256(mappKey + remove0x(prevBaseSlotKey));
 
   let slotKeysTypes: StorageSlotKeyTypePair[] = [];
 
@@ -682,8 +663,8 @@ async function getMappingTypeStorageSlots(
       contractAddress,
       mappingKey,
       nextSlotKey,
-      storageLayout.types[storageObjectType.value]
-    )
+      storageLayout.types[storageObjectType.value],
+    ),
   );
 
   return slotKeysTypes;
@@ -693,19 +674,17 @@ async function getDynamicArrayTypeStorageSlots(
   vmManager: SmockVMManager,
   contractAddress: string,
   storageObjectType: SolidityStorageType,
-  key: string
+  key: string,
 ): Promise<StorageSlotKeyTypePair[]> {
   let slotKeysTypes: StorageSlotKeyTypePair[] = [];
   // We know that the array length is stored in position `key`
   let arrayLength = parseInt(toHexString(await vmManager.getContractStorage(toFancyAddress(contractAddress), fromHexString(key))), 16);
 
   // The values of the array are stored in `keccak256(key)` where key is the storage location of the array
-  key = ethers.utils.keccak256(key);
+  key = ethers.keccak256(key);
   for (let i = 0; i < arrayLength; i++) {
     // Array values are stored contiguous so we need to calculate the new slot keys in each iteration
-    let slotKey = BigNumber.from(key)
-      .add(BigNumber.from(i.toString(16)))
-      .toHexString();
+    let slotKey = '0x' + (BigInt(key) + BigInt(i.toString(16))).toString(16);
     slotKeysTypes = slotKeysTypes.concat({
       key: slotKey,
       type: storageObjectType,
@@ -729,7 +708,7 @@ export function decodeVariable(slotValueTypePairs: StorageSlotKeyValuePair | Sto
   const numberOfBytes = parseInt(slotValueTypePairs[0].type.numberOfBytes) * 2;
   if (slotValueTypePairs[0].type.encoding === 'inplace') {
     if (slotValueTypePairs[0].type.label === 'address' || slotValueTypePairs[0].type.label.startsWith('contract')) {
-      result = ethers.utils.getAddress('0x' + slotValueTypePairs[0].value.slice(0, numberOfBytes));
+      result = ethers.getAddress('0x' + slotValueTypePairs[0].value.slice(0, numberOfBytes));
     } else if (slotValueTypePairs[0].type.label === 'bool') {
       result = slotValueTypePairs[0].value.slice(0, numberOfBytes) === '01' ? true : false;
     } else if (slotValueTypePairs[0].type.label.startsWith('bytes')) {
@@ -740,7 +719,7 @@ export function decodeVariable(slotValueTypePairs: StorageSlotKeyValuePair | Sto
         value = value.slice(-slotValueTypePairs[0].type.numberOfBytes * 2 - slotValueTypePairs[0].offset * 2, -slotValueTypePairs[0].offset * 2);
       }
       // When we deal with uint we can just return the number
-      result = BigNumber.from('0x' + value);
+      result = BigInt('0x' + value);
     } else if (slotValueTypePairs[0].type.label.startsWith('int')) {
       // When we deal with signed integers we have to convert the value from signed hex to decimal
 
@@ -754,7 +733,7 @@ export function decodeVariable(slotValueTypePairs: StorageSlotKeyValuePair | Sto
         // We choose this mask because we want to flip all the hex bytes in order to find the two's complement
         const mask = fromHexString('0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF');
         // After the XOR and the addition we have the positive number of the original hex value, we want the negative value so we add `-` infront
-        intHex = -BigNumber.from(toHexString(xor(intHex, mask))).add(BigNumber.from(1));
+        intHex = -BigInt('0x' + xor(intHex, mask).toString('hex')) + BigInt(1);
       }
 
       result = intHex;
@@ -820,7 +799,7 @@ export function decodeVariable(slotValueTypePairs: StorageSlotKeyValuePair | Sto
             label: slotValueTypePairs[i].type.label,
             numberOfBytes: slotValueTypePairs[i].type.numberOfBytes,
           },
-        })
+        }),
       );
     }
     result = arr;

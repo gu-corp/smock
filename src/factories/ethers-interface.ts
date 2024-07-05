@@ -2,7 +2,7 @@ import { ethers } from 'ethers';
 import hre from 'hardhat';
 import { FakeContractSpec } from '../types';
 
-export async function ethersInterfaceFromSpec(spec: FakeContractSpec): Promise<ethers.utils.Interface> {
+export async function ethersInterfaceFromSpec(spec: FakeContractSpec): Promise<ethers.Interface> {
   if (typeof spec === 'string') {
     try {
       if (isMaybeJsonObject(spec)) {
@@ -22,23 +22,23 @@ export async function ethersInterfaceFromSpec(spec: FakeContractSpec): Promise<e
     foundInterface = foundInterface.interface;
   }
 
-  if (foundInterface instanceof ethers.utils.Interface) {
+  if (foundInterface instanceof ethers.Interface) {
     return foundInterface;
   } else {
-    return new ethers.utils.Interface(foundInterface);
+    return new ethers.Interface(foundInterface);
   }
 }
 
-async function ethersInterfaceFromAbi(abi: string): Promise<ethers.utils.Interface> {
+async function ethersInterfaceFromAbi(abi: string): Promise<ethers.Interface> {
   try {
-    return new ethers.utils.Interface(abi);
+    return new ethers.Interface(abi);
   } catch (err) {
     const error: Error = err as Error;
     throw new Error(`unable to generate smock spec from abi string.\n${error.message}`);
   }
 }
 
-async function ethersInterfaceFromContractName(contractNameOrFullyQualifiedName: string): Promise<ethers.utils.Interface> {
+async function ethersInterfaceFromContractName(contractNameOrFullyQualifiedName: string): Promise<ethers.Interface> {
   let error: Error | null = null;
   try {
     return (await (hre as any).ethers.getContractFactory(contractNameOrFullyQualifiedName)).interface;
@@ -47,7 +47,7 @@ async function ethersInterfaceFromContractName(contractNameOrFullyQualifiedName:
   }
 
   try {
-    return (await (hre as any).ethers.getContractAt(contractNameOrFullyQualifiedName, ethers.constants.AddressZero)).interface;
+    return (await (hre as any).ethers.getContractAt(contractNameOrFullyQualifiedName, ethers.ZeroAddress)).interface;
   } catch (err) {
     error = err as Error;
   }

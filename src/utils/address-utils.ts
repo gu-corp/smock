@@ -1,5 +1,5 @@
 import { randomBytes } from 'crypto';
-import { getAddress } from 'ethers/lib/utils';
+import { getAddress } from 'ethers';
 
 export const makeRandomAddress = (): string => {
   return getAddress(randomHex(20));

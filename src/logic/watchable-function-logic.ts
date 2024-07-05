@@ -1,4 +1,3 @@
-import { BigNumber } from 'ethers';
 import isEqual from 'lodash.isequal';
 import isEqualWith from 'lodash.isequalwith';
 import { Observable, of } from 'rxjs';
@@ -19,7 +18,7 @@ export class WatchableFunctionLogic {
   atCall(index: number): WatchableFunctionLogic {
     if (!this.getCall(index))
       throw new Error(
-        `expected ${this.name} to have been called ${humanizeTimes(index + 1)}, but it was called ${humanizeTimes(this.getCallCount())}`
+        `expected ${this.name} to have been called ${humanizeTimes(index + 1)}, but it was called ${humanizeTimes(this.getCallCount())}`,
       );
     return new WatchableFunctionLogic(this.name, of(this.getCall(index)));
   }
@@ -32,8 +31,8 @@ export class WatchableFunctionLogic {
     return !!this.callHistory.find((call) => this.isDeepEqual(call.args, expectedCallArgs));
   }
 
-  calledWithValue(value: BigNumber): boolean {
-    return !!this.callHistory.find((call) => call.value.eq(value));
+  calledWithValue(value: bigint): boolean {
+    return !!this.callHistory.find((call) => call.value === value);
   }
 
   alwaysCalledWith(...expectedCallArgs: unknown[]): boolean {
@@ -53,7 +52,7 @@ export class WatchableFunctionLogic {
     return this.compareWatchableContractNonces(
       this,
       anotherWatchableContract,
-      (thisNonce, anotherWatchableContractNonce) => thisNonce < anotherWatchableContractNonce
+      (thisNonce, anotherWatchableContractNonce) => thisNonce < anotherWatchableContractNonce,
     );
   }
 
@@ -65,7 +64,7 @@ export class WatchableFunctionLogic {
     return this.compareWatchableContractNonces(
       this,
       anotherWatchableContract,
-      (thisNonce, anotherWatchableContractNonce) => thisNonce > anotherWatchableContractNonce
+      (thisNonce, anotherWatchableContractNonce) => thisNonce > anotherWatchableContractNonce,
     );
   }
 
@@ -77,7 +76,7 @@ export class WatchableFunctionLogic {
     return this.compareWatchableContractNonces(
       this,
       anotherWatchableContract,
-      (thisNonce, anotherWatchableContractNonce) => thisNonce === anotherWatchableContractNonce - 1
+      (thisNonce, anotherWatchableContractNonce) => thisNonce === anotherWatchableContractNonce - 1,
     );
   }
 
@@ -92,7 +91,7 @@ export class WatchableFunctionLogic {
     return this.compareWatchableContractNonces(
       this,
       anotherWatchableContract,
-      (thisNonce, anotherWatchableContractNonce) => thisNonce === anotherWatchableContractNonce + 1
+      (thisNonce, anotherWatchableContractNonce) => thisNonce === anotherWatchableContractNonce + 1,
     );
   }
 
@@ -135,7 +134,7 @@ export class WatchableFunctionLogic {
   private compareWatchableContractNonces(
     watchablecontractA: WatchableFunctionLogic,
     watchablecontractB: WatchableFunctionLogic,
-    comparison: (nonceA: number, nonceB: number) => boolean
+    comparison: (nonceA: number, nonceB: number) => boolean,
   ): boolean {
     return !!watchablecontractA.callHistory.find((watchablecontractACall) => {
       return watchablecontractB.callHistory.find((watchablecontractBCall) => {
@@ -160,11 +159,14 @@ export class WatchableFunctionLogic {
    */
   private isEqualCustomizer(obj1: unknown, obj2: unknown): boolean | undefined {
     // handle big number comparisons
-    if (BigNumber.isBigNumber(obj1)) {
-      return obj1.eq(obj2 as any);
+    if (typeof obj1 === 'bigint' && typeof obj2 === 'number') {
+      return obj1 === BigInt(obj2);
     }
-    if (BigNumber.isBigNumber(obj2)) {
-      return obj2.eq(obj1 as any);
+    if (typeof obj2 === 'bigint' && typeof obj1 === 'number') {
+      return BigInt(obj1) === obj2;
+    }
+    if (typeof obj1 === 'bigint' && typeof obj2 === 'bigint') {
+      return obj1 === obj2;
     }
 
     // handle struct comparisons

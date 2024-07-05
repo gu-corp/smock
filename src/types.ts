@@ -1,9 +1,8 @@
 /* Imports: External */
 import { Fragment, Interface, JsonFragment } from '@ethersproject/abi';
-import { Provider } from '@ethersproject/abstract-provider';
 import { Signer } from '@ethersproject/abstract-signer';
 import { Address } from '@nomicfoundation/ethereumjs-util';
-import { BaseContract, BigNumber, ContractFactory, ethers } from 'ethers';
+import { BaseContract, ContractFactory, ethers, Provider } from 'ethers';
 import { EditableStorageLogic } from './logic/editable-storage-logic';
 import { ReadableStorageLogic } from './logic/readable-storage-logic';
 import { WatchableFunctionLogic } from './logic/watchable-function-logic';
@@ -11,7 +10,7 @@ import { WatchableFunctionLogic } from './logic/watchable-function-logic';
 type Abi = ReadonlyArray<
   Fragment | Pick<JsonFragment, 'name' | 'type' | 'anonymous' | 'payable' | 'constant' | 'stateMutability' | 'inputs' | 'outputs'> | string
 >;
-export type FakeContractSpec = { abi?: Abi; interface?: Interface } | Abi | ethers.utils.Interface | string;
+export type FakeContractSpec = { abi?: Abi; interface?: Interface } | Abi | ethers.Interface | string;
 
 export interface FakeContractOptions {
   provider?: Provider;
@@ -36,7 +35,7 @@ export interface ContractCall {
   args: unknown[] | string;
   nonce: number;
   target: string;
-  value: BigNumber;
+  value: bigint;
   delegatedFrom?: string;
 }
 
@@ -68,8 +67,8 @@ export type SmockContractBase<T extends BaseContract> = Omit<BaseContract, 'conn
 export type FakeContract<T extends BaseContract = BaseContract> = SmockContractBase<T> & {
   connect: (...args: Parameters<T['connect']>) => FakeContract<T>;
 } & {
-    [Property in keyof T['functions']]: ProgrammableContractFunction;
-  };
+  [Property in Parameters<T['interface']['getFunction']>[0]]: ProgrammableContractFunction;
+};
 
 export type MockContract<T extends BaseContract = BaseContract> = SmockContractBase<T> & {
   connect: (...args: Parameters<T['connect']>) => MockContract<T>;
@@ -77,8 +76,8 @@ export type MockContract<T extends BaseContract = BaseContract> = SmockContractB
   setVariables: EditableStorageLogic['setVariables'];
   getVariable: ReadableStorageLogic['getVariable'];
 } & {
-    [Property in keyof T['functions']]: ProgrammableContractFunction;
-  };
+  [Property in Parameters<T['interface']['getFunction']>[0]]: ProgrammableContractFunction;
+};
 
 type ThenArg<T> = T extends PromiseLike<infer U> ? U : T;
 

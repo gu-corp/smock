@@ -1,4 +1,4 @@
-import { stripZeros } from 'ethers/lib/utils';
+import { stripZeros } from '@ethersproject/bytes';
 import { SmockVMManager } from '../types';
 import { fromHexString, remove0x, toFancyAddress, toHexString } from '../utils';
 import {
@@ -26,7 +26,7 @@ export class ReadableStorageLogic {
       variableName,
       this.vmManager,
       this.contractAddress,
-      mappingKeys
+      mappingKeys,
     );
     const slotValueTypePairs: StorageSlotKeyValuePair[] = await Promise.all(
       slots.map(async (slotKeyPair) => ({
@@ -34,11 +34,11 @@ export class ReadableStorageLogic {
         value: remove0x(
           toHexString(
             Buffer.from(
-              stripZeros(await this.vmManager.getContractStorage(toFancyAddress(this.contractAddress), fromHexString(slotKeyPair.key)))
-            )
-          )
+              stripZeros(await this.vmManager.getContractStorage(toFancyAddress(this.contractAddress), fromHexString(slotKeyPair.key))),
+            ),
+          ),
         ),
-      }))
+      })),
     );
     return decodeVariable(slotValueTypePairs);
   }

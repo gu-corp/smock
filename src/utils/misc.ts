@@ -1,4 +1,3 @@
-import { BigNumber } from 'ethers';
 import { isPojo } from './serdes';
 
 const timeWords = [null, 'once', 'twice', 'thrice'];
@@ -18,7 +17,7 @@ export function flatten(obj: any, prefix: string = '', result: any = {}): Object
   return Object.entries(obj).reduce((acc, [key, val]) => {
     const subKey = `${prefix}${key}`;
 
-    if (BigNumber.isBigNumber(val) || typeof val === 'string' || typeof val === 'number' || typeof val === 'boolean') {
+    if (typeof val === 'bigint' || typeof val === 'string' || typeof val === 'number' || typeof val === 'boolean') {
       result[subKey] = val;
     } else if (Array.isArray(val)) {
       val.forEach((valItem, index) => flatten(valItem, !prefix ? `${index}` : `${prefix}${index}.`, acc));

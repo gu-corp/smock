@@ -1,5 +1,5 @@
-import '@nomiclabs/hardhat-ethers';
-import '@nomiclabs/hardhat-waffle';
+import '@nomicfoundation/hardhat-toolbox';
+import '@nomicfoundation/hardhat-network-helpers';
 import '@typechain/hardhat';
 import '@typechain/hardhat/dist/type-extensions';
 import { HardhatUserConfig } from 'hardhat/config';
@@ -21,7 +21,7 @@ const config: HardhatUserConfig = {
   },
   typechain: {
     outDir: 'typechained',
-    target: 'ethers-v5',
+    target: 'ethers-v6',
   },
 };
 

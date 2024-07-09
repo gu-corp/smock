@@ -1,5 +1,5 @@
 {
-  "name": "@defi-wonderland/smock",
+  "name": "@gu-corp/smock",
   "version": "2.4.0",
   "description": "The Solidity mocking library",
   "keywords": [
@@ -13,13 +13,13 @@
     "mocks",
     "chai"
   ],
-  "homepage": "https://github.com/defi-wonderland/smock#readme",
+  "homepage": "https://github.com/gu-corp/smock#readme",
   "bugs": {
-    "url": "https://github.com/defi-wonderland/smock/issues"
+    "url": "https://github.com/gu-corp/smock/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/defi-wonderland/smock.git"
+    "url": "git+https://github.com/gu-corp/smock.git"
   },
   "license": "MIT",
   "author": "DeFi Wonderland x Optimism PBC",

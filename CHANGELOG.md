@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.5.0](https://github.com/gu-corp/smock/compare/v2.3.3...v2.5.0) (2024-07-09)
+
+
+### Features
+
+* added support for call value ([#142](https://github.com/gu-corp/smock/issues/142)) ([3c2b80b](https://github.com/gu-corp/smock/commit/3c2b80b72fe146634b999df5b9bb9ef5ffc27508))
+* arrays support for setVariable ([#144](https://github.com/gu-corp/smock/issues/144)) ([91a7aad](https://github.com/gu-corp/smock/commit/91a7aadf0cfa14ba52edb98c15fa0d38562fef39))
+* make smock work with the EDR-powered version of Hardhat ([#195](https://github.com/gu-corp/smock/issues/195)) ([396fa41](https://github.com/gu-corp/smock/commit/396fa41bd0d4b454dc35505a39f1f6bf0ce07447))
+* support ethers v6 ([7c1d402](https://github.com/gu-corp/smock/commit/7c1d4025cac8d8d7be0c8f134f70486f3924b092))
+* update ethereumjs vm and hardhat ([#155](https://github.com/gu-corp/smock/issues/155)) ([b71cfd1](https://github.com/gu-corp/smock/commit/b71cfd118a2a9579517769c0c31abede7d83ca71))
+* update package info ([1086984](https://github.com/gu-corp/smock/commit/1086984910535d26b3db8a5ddb20d811104b1a84))
+
+
+### Bug Fixes
+
+* bug with usage of padNumHexSlotValue ([#161](https://github.com/gu-corp/smock/issues/161)) ([9cffea6](https://github.com/gu-corp/smock/commit/9cffea640c4bd5ddc09a638505f6bb0a0cebdbad))
+* change markdown output variant ([#173](https://github.com/gu-corp/smock/issues/173)) ([e90e158](https://github.com/gu-corp/smock/commit/e90e158f1d652383ea8137e1afcd1f65e2bb42c3))
+* initialize hardhat provider ([#182](https://github.com/gu-corp/smock/issues/182)) ([bc688fb](https://github.com/gu-corp/smock/commit/bc688fb872cae0a6c4b4d795c9e2faf23589052e))
+
 ### [2.3.4](https://github.com/defi-wonderland/smock/compare/v2.3.1...v2.3.4) (2022-11-07)
 
 

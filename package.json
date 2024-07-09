@@ -1,6 +1,6 @@
 {
   "name": "@gu-corp/smock",
-  "version": "2.4.0",
+  "version": "2.5.0",
   "description": "The Solidity mocking library",
   "keywords": [
     "ethereum",

@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.5.1](https://github.com/gu-corp/smock/compare/v2.5.0...v2.5.1) (2024-10-31)
+
+
+### Bug Fixes
+
+* calling provider.init ([28a2c9b](https://github.com/gu-corp/smock/commit/28a2c9b6eb07ecf94008ae51bd65b0616026bc92))
+
 ## [2.5.0](https://github.com/gu-corp/smock/compare/v2.3.3...v2.5.0) (2024-07-09)
 
 

@@ -29,7 +29,9 @@ export const getHardhatBaseProvider = async (runtime: HardhatRuntimeEnvironment)
   let provider: any = runtime.network.provider;
 
   // This is a no-op if the provider is already initialized.
-  await provider.init();
+  if (provider.init) {
+    await provider.init();
+  }
 
   while (provider._wrapped !== undefined) {
     provider = provider._wrapped;
